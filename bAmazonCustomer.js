@@ -1,5 +1,5 @@
-var Mysql = require("mysql");
-var Inquirer = requrie("inquirer");
+var mysql = require("mysql");
+var inquirer = require("inquirer");
 
 var connection = mysql.createConnection({
     host     : 'localhost',
@@ -17,10 +17,10 @@ var connection = mysql.createConnection({
   });
 
   function showProducts() {
-    connection.query('SELECT * FROM `products`', function (error, results, fields) {
+    connection.query("select * from products", function (error, results) {
         if (error) {console.log(error)};
-        console.log(results);
-        askQuestion()
+        console.log(results)
+        askQuestions()
       });
   }
 
@@ -36,16 +36,42 @@ var connection = mysql.createConnection({
         message: "How many items do you want to purchase?"
     }
         ]).then(answers => {
-        if (quantity < answers.itemQuantity) {
-            console.log(`Insufficient quantity!`);
-            askQuestion();
-        }
-        if (quantity > answers.itemQuantity) {
-            console.log(`good selection!`);
+
+            connection.query("select * from products", function (error, results) {
+                if (error) {console.log(error)};
+                
+
+                if (results[answers.itemChoice-1].stock_quantity < answers.itemQuantity) {
+                    console.log(`Insufficient quantity!`);
+                    askQuestions();
+                }
+                if (results[answers.itemChoice-1].stock_quantity > answers.itemQuantity) {
+                    
+                    showProducts();
+                    function showProducts() {
+                        connection.query('UPDATE products SET stock_quantity=stock_quantity - ? WHERE item_id = ?',
+                        [
+                            answers.itemQuantity, answers.itemChoice
+                        
+                        ], function (error, results, fields) {
+                            if (error) {console.log(error)};
+                           
+                            showUpdate()
+                            function showUpdate() {
+                                connection.query("select * from products WHERE item_id = ?", [answers.itemChoice], function (error, results) {
+                                    if (error) {console.log(error)};
+                                    var value = results[0].price * answers.itemQuantity;
+                                    console.log(value);
+                                    connection.end()
+                                  });
+                              }
+                          });
+                      }
+                    
+                }
+            })
             
-        }
     });
   }
   
-  connection.end();
   
